@@ -1,0 +1,26 @@
+@startuml
+actor Operator
+participant "MES UI" as UI
+participant "MES API" as API
+participant "Cache (Redis)" as Cache
+database "MES DB" as DB
+
+Operator -> UI : Open orders page
+UI -> API : GET /orders?filters
+
+API -> Cache : get(order_list:filters)
+alt Cache hit
+    Cache --> API : orders
+else Cache miss
+    API -> DB : SELECT orders
+    DB --> API : orders
+    API -> Cache : set(order_list:filters, TTL)
+end
+
+API --> UI : orders
+UI --> Operator : orders
+
+Cache -> Cache : TTL expires → delete(key)
+
+API -> Cache : delete(order_list:*) 
+@enduml
